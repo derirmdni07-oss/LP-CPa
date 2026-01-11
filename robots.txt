@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://domain-anda.com/sitemap.xml

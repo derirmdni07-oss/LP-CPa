@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results — Stream Drive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111111;
+            --accent: #4285F4;
+            --text: #ffffff;
+            --text-dim: #9ca3af;
+        }
+
+        body { 
+            background: var(--bg); color: var(--text); 
+            font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding-top: 100px;
+        }
+
+        /* Nav Style */
+        nav {
+            position: fixed; top: 0; width: 100%; height: 80px; z-index: 1000;
+            background: rgba(5, 5, 5, 0.8); backdrop-filter: blur(20px);
+            display: flex; align-items: center; padding: 0 5%;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .container { padding: 0 5% 50px; min-height: 80vh; }
+        .search-info { margin-bottom: 40px; }
+        .search-info h1 { font-size: 1.8rem; font-weight: 800; color: var(--text-dim); }
+        .search-info span { color: var(--accent); }
+
+        .results-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px;
+        }
+
+        /* Card Style */
+        .card { 
+            background: var(--surface); border-radius: 16px; overflow: hidden; 
+            transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .card:hover { transform: translateY(-10px); border-color: var(--accent); }
+        .card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
+        .card-info { padding: 15px; }
+        .card-info h3 { font-size: 0.9rem; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-info p { color: var(--accent); font-size: 0.7rem; font-weight: 800; }
+
+        .no-results { text-align: center; padding: 100px 0; color: var(--text-dim); width: 100%; grid-column: 1 / -1; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" style="text-decoration:none; color:white; font-weight:800; display:flex; align-items:center; gap:10px;">
+        <i class="fas fa-chevron-left"></i> BACK TO HOME
+    </a>
+</nav>
+
+<div class="container">
+    <div class="search-info">
+        <h1>Results for: <span id="query-text">...</span></h1>
+    </div>
+
+    <div id="search-grid" class="results-grid">
+        </div>
+</div>
+
+<footer>
+    <p>&copy; 2026 Stream Drive. All Rights Reserved.</p>
+</footer>
+
+<script>
+    const CONFIG = {
+        KEY: '22be462e6d3de1dbab03d1ca50847b5a',
+        BASE: 'https://api.themoviedb.org/3',
+        IMG: 'https://image.tmdb.org/t/p/w500'
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('query');
+    document.getElementById('query-text').innerText = query || "None";
+
+    async function performSearch() {
+        if(!query) return;
+        
+        try {
+            const res = await fetch(`${CONFIG.BASE}/search/multi?api_key=${CONFIG.KEY}&query=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            displayResults(data.results);
+        } catch (error) {
+            console.error("Search failed", error);
+        }
+    }
+
+    function displayResults(results) {
+        const grid = document.getElementById('search-grid');
+        grid.innerHTML = ''; // Clear previous content
+
+        // Filter results to only show Movie or TV (ignore people)
+        const filteredResults = results.filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+
+        if(filteredResults.length === 0) {
+            grid.innerHTML = '<div class="no-results"><h1>No movies or shows found.</h1></div>';
+            return;
+        }
+
+        filteredResults.forEach(item => {
+            if(!item.poster_path) return; 
+
+            const type = item.media_type; // 'movie' or 'tv'
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // LOGIC CHANGE: Direct to detail.html
+            card.onclick = () => window.location.href = `detail.html?id=${item.id}&type=${type}`;
+            
+            const releaseDate = item.release_date || item.first_air_date;
+            const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+
+            card.innerHTML = `
+                <img src="${CONFIG.IMG + item.poster_path}" alt="poster">
+                <div class="card-info">
+                    <h3>${item.title || item.name}</h3>
+                    <p>${type.toUpperCase()} • ${year}</p>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    performSearch();
+</script>
+</body>
+</html>
